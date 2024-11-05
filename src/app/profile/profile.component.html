@@ -1,0 +1,22 @@
+<!-- profile.component.html -->
+<div>
+  <h2>User Profile</h2>
+  <div>
+    <label>Username:</label>
+    <input [(ngModel)]="username" [readonly]="!isEditing" />
+  </div>
+  <div>
+    <label>Full Name:</label>
+    <input [(ngModel)]="fullName" [readonly]="!isEditing" />
+  </div>
+  <div>
+    <label>Email:</label>
+    <input [(ngModel)]="email" [readonly]="!isEditing" />
+  </div>
+  <div>
+    <label>Phone:</label>
+    <input [(ngModel)]="phone" [readonly]="!isEditing" />
+  </div>
+  <button (click)="toggleEdit()">{{ isEditing ? 'Cancel' : 'Edit' }}</button>
+  <button *ngIf="isEditing" (click)="saveProfile()">Save</button>
+</div>
