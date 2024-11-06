@@ -33,11 +33,15 @@ export class AdminDashboardComponent implements OnInit {
     this.fetchUsers();
   }
 
-
   async fetchUsers() {
     try {
+      // Check if the API endpoint is working and returns the data correctly.
       const response = await axios.get('http://localhost:5300/api/users');
-      this.users = response.data;
+      if (response.data && Array.isArray(response.data)) {
+        this.users = response.data;
+      } else {
+        console.error('Fetched data is not in the expected format');
+      }
     } catch (error) {
       console.error('Error fetching users:', error);
     }
@@ -52,14 +56,13 @@ export class AdminDashboardComponent implements OnInit {
     this.showPassword = !this.showPassword;
   }
 
-
   isNewUserValid(): boolean {
     return (
       this.emailPattern.test(this.newUser.email ?? '') &&
       this.passwordPattern.test(this.newUser.password ?? '')
     );
   }
-  
+
   isEditUserValid(): boolean {
     return (
       this.editUser &&
@@ -67,7 +70,6 @@ export class AdminDashboardComponent implements OnInit {
       this.passwordPattern.test(this.editUser.password ?? '')
     );
   }
-  
 
   async saveNewUser() {
     if (this.isNewUserValid()) {
@@ -83,13 +85,13 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   editUserDetails(user: User) {
-    this.editUser = { ...user };
+    this.editUser = { ...user, originalUsername: user.username};  // Ensure correct mapping
   }
 
   async saveUser() {
     if (this.editUser && this.isEditUserValid()) {
       try {
-        await axios.put(`http://localhost:5300/api/users/${this.editUser.username}`, this.editUser);
+        await axios.put(`http://localhost:5300/api/users/${this.editUser.originalUsername}`, this.editUser);
         this.fetchUsers();
         this.editUser = null;
       } catch (error) {
@@ -97,7 +99,6 @@ export class AdminDashboardComponent implements OnInit {
       }
     }
   }
-
 
   cancelEdit() {
     this.editUser = null;
