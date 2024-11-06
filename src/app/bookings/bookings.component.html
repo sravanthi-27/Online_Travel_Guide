@@ -1,1 +1,52 @@
-<p>bookings works!</p>
+<div class="booking-container">
+    <h2>Booking Section</h2>
+    <form (ngSubmit)="fetchBookingDetails()" class="booking-form">
+      <div class="form-group">
+        <label for="fullName">Full Name</label>
+        <input
+          type="text"
+          id="fullName"
+          [(ngModel)]="fullName"
+          name="fullName"
+          placeholder="Enter your full name"
+          class="form-control"
+        />
+      </div>
+  
+      <button type="submit" class="btn btn-primary">
+        Fetch Booking
+      </button>
+  
+      <div *ngIf="bookingDetails" class="booking-details">
+        <h3>Booking Information</h3>
+        <p><strong>Full Name:</strong> {{ bookingDetails.fullName }}</p>
+        <p><strong>Email:</strong> {{ bookingDetails.email }}</p>
+        <p><strong>Phone:</strong> {{ bookingDetails.phone }}</p>
+        <p><strong>Address:</strong> {{ bookingDetails.address }}</p>
+        <p><strong>Location:</strong> {{ bookingDetails.location }}</p>
+        <p><strong>Place:</strong> {{ bookingDetails.place }}</p>
+        <p><strong>Accommodation Type:</strong> {{ bookingDetails.accommodationType }}</p>
+        <p><strong>Price Range:</strong> {{ bookingDetails.priceRange }}</p>
+        <p><strong>Check-in Date:</strong> {{ bookingDetails.checkin }}</p>
+        <p><strong>Check-out Date:</strong> {{ bookingDetails.checkout }}</p>
+        <p><strong>Persons:</strong> {{ bookingDetails.persons }}</p>
+        <p><strong>Room Type:</strong> {{ bookingDetails.roomType }}</p>
+        <p><strong>Payment Method:</strong> {{ bookingDetails.payment }}</p>
+        <p><strong>Additional Services:</strong> {{ bookingDetails.additionalServices.join(', ') }}</p>
+        <p><strong>Special Needs:</strong> {{ bookingDetails.specialNeeds ? 'Yes' : 'No' }}</p>
+        <p><strong>Hotel Name:</strong> {{ bookingDetails.hotelName }}</p>
+        <p><strong>Hotel Address:</strong> {{ bookingDetails.hotelAddress }}</p>
+        <p><strong>Agent Name:</strong> {{ bookingDetails.agentName }}</p>
+        <p><strong>Agent ID:</strong> {{ bookingDetails.agentId }}</p>
+        
+        <!-- Check if remainingDays is not null before displaying it -->
+        <p><strong>Remaining Days:</strong> 
+          {{ remainingDays !== null && remainingDays < 0 ? 'Declined' : remainingDays }}
+        </p>
+  
+        <button type="button" (click)="deleteBooking()" class="btn btn-danger">
+          Cancel Booking
+        </button>
+      </div>
+    </form>
+  </div>
