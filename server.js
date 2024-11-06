@@ -257,7 +257,7 @@ const writeUsersFile = (data) => {
   fs.writeFileSync(USERS_FILE_PATH, JSON.stringify(data, null, 2), 'utf-8');
 };
 
-// API endpoint to add a new user
+// POST to add a new user
 app.post('/api/users', (req, res) => {
     const newUser = req.body;
   
@@ -268,43 +268,47 @@ app.post('/api/users', (req, res) => {
       }
       users.push(newUser);
       writeUsersFile(users);
-      res.json({ message: 'User added successfully' });
+      res.status(201).json({ message: 'User added successfully' });
     } catch (error) {
       console.error('Error adding new user:', error);
       res.status(500).json({ message: 'Error adding new user' });
     }
   });
   
-// API endpoint to edit a user
-app.put('/api/users/:username', (req, res) => {
+  // PUT to update a user
+  app.put('/api/users/:username', (req, res) => {
     const username = req.params.username;
     const updatedUser = req.body;
   
     try {
       const users = readUsersFile();
-      const userIndex = users.findIndex((user) => user.username === username);
+      const userIndex = users.findIndex(user => user.username === username);
   
       if (userIndex === -1) {
         return res.status(404).json({ message: 'User not found' });
+      }
+  
+      // Check if new username is already in use by a different user
+      if (username !== updatedUser.username && users.some(user => user.username === updatedUser.username)) {
+        return res.status(400).json({ message: 'Username already exists' });
       }
   
       users[userIndex] = { ...users[userIndex], ...updatedUser };
       writeUsersFile(users);
       res.json({ message: 'User updated successfully' });
     } catch (error) {
-      console.error('Error updating user data:', error);
-      res.status(500).json({ message: 'Error updating user data' });
+      console.error('Error updating user:', error);
+      res.status(500).json({ message: 'Error updating user' });
     }
   });
   
-
-  // API endpoint to delete a user
+  // DELETE to remove a user
   app.delete('/api/users/:username', (req, res) => {
     const username = req.params.username;
   
     try {
       const users = readUsersFile();
-      const filteredUsers = users.filter((user) => user.username !== username);
+      const filteredUsers = users.filter(user => user.username !== username);
   
       if (users.length === filteredUsers.length) {
         return res.status(404).json({ message: 'User not found' });
@@ -317,31 +321,11 @@ app.put('/api/users/:username', (req, res) => {
       res.status(500).json({ message: 'Error deleting user' });
     }
   });
+  
 
 // Edit (update) a user by username
 
-// POST to add a new user
-app.post('/api/users', (req, res) => {
-    const newUser = req.body;
-  
-    try {
-      const users = readUsersFile();
-  
-      // Check if username already exists
-      const existingUser = users.find((user) => user.username === newUser.username);
-      if (existingUser) {
-        return res.status(400).json({ message: 'Username already exists' });
-      }
-  
-      users.push(newUser); // Add new user to array
-      writeUsersFile(users); // Save to users.json
-  
-      res.status(201).json({ message: 'User created successfully' });
-    } catch (error) {
-      console.error('Error creating new user:', error);
-      res.status(500).json({ message: 'Error creating new user' });
-    }
-  });
+
 // Route for forgot password
 app.post('/api/forgotpassword', (req, res) => {
     console.log("Forgot password request received:", req.body);
@@ -626,6 +610,51 @@ app.post('/api/accommodation', (req, res) => {
         });
     });
 });
+
+// Endpoint to fetch all bookings
+app.get('/api/bookings', (req, res) => {
+    fs.readFile(accommodationFilePath, 'utf-8', (err, data) => {
+      if (err) {
+        console.error('Error reading data:', err);
+        res.status(500).json({ error: 'Failed to read data' });
+      } else {
+        res.json(JSON.parse(data));
+      }
+    });
+  });
+  
+  // Endpoint to delete a booking by full name
+  app.delete('/api/bookings/:fullName', (req, res) => {
+    const { fullName } = req.params;
+  
+    fs.readFile(accommodationFilePath, 'utf-8', (err, data) => {
+      if (err) {
+        console.error('Error reading data:', err);
+        res.status(500).json({ error: 'Failed to read data' });
+        return;
+      }
+  
+      const bookings = JSON.parse(data);
+      const updatedBookings = bookings.filter(
+        (booking) => booking.fullName !== fullName
+      );
+  
+      if (updatedBookings.length === bookings.length) {
+        res.status(404).json({ error: 'Booking not found' });
+        return;
+      }
+  
+      fs.writeFile(accommodationFilePath, JSON.stringify(updatedBookings, null, 2), (err) => {
+        if (err) {
+          console.error('Error writing data:', err);
+          res.status(500).json({ error: 'Failed to write data' });
+        } else {
+          res.json({ message: 'Booking deleted successfully' });
+        }
+      });
+    });
+  });
+
 // Endpoint to send email
 app.post('/api/send-email', (req, res) => {
     const accommodationData = req.body;
