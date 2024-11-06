@@ -57,35 +57,35 @@
     </thead>
     <tbody>
       <tr *ngFor="let user of users">
-        <td *ngIf="editUser?.username !== user.username">{{ user.username }}</td>
-        <td *ngIf="editUser?.username === user.username">
-          <input [(ngModel)]="editUser.username" disabled />
+        <td *ngIf="editUser?.originalUsername !== user.username">{{ user.username }}</td>
+        <td *ngIf="editUser?.originalUsername === user.username">
+          <input [(ngModel)]="editUser.username"/>
         </td>
 
-        <td *ngIf="editUser?.username !== user.username">{{ user.fullName }}</td>
-        <td *ngIf="editUser?.username === user.username">
+        <td *ngIf="editUser?.originalUsername !== user.username">{{ user.fullName }}</td>
+        <td *ngIf="editUser?.originalUsername === user.username">
           <input [(ngModel)]="editUser.fullName" />
         </td>
 
-        <td *ngIf="editUser?.username !== user.username">{{ user.phone }}</td>
-        <td *ngIf="editUser?.username === user.username">
+        <td *ngIf="editUser?.originalUsername !== user.username">{{ user.phone }}</td>
+        <td *ngIf="editUser?.originalUsername === user.username">
           <input [(ngModel)]="editUser.phone" />
         </td>
 
-        <td *ngIf="editUser?.username !== user.username">{{ user.email }}</td>
-        <td *ngIf="editUser?.username === user.username">
+        <td *ngIf="editUser?.originalUsername !== user.username">{{ user.email }}</td>
+        <td *ngIf="editUser?.originalUsername === user.username">
           <input [(ngModel)]="editUser.email" />
         </td>
 
-        <td *ngIf="editUser?.username !== user.username">****</td>
-        <td *ngIf="editUser?.username === user.username">
+        <td *ngIf="editUser?.originalUsername !== user.username">*****</td>
+        <td *ngIf="editUser?.originalUsername === user.username">
           <input [(ngModel)]="editUser.password" type="text" />
         </td>
 
         <td>
-          <button *ngIf="editUser?.username !== user.username" (click)="editUserDetails(user)" class="btn btn-warning">Edit</button>
-          <button *ngIf="editUser?.username === user.username" (click)="saveUser()" class="btn btn-success">Save</button>
-          <button *ngIf="editUser?.username === user.username" (click)="cancelEdit()" class="btn btn-secondary">Cancel</button>
+          <button *ngIf="editUser?.originalUsername !== user.username" (click)="editUserDetails(user)" class="btn btn-warning">Edit</button>
+          <button *ngIf="editUser?.originalUsername === user.username" (click)="saveUser()" class="btn btn-success">Save</button>
+          <button *ngIf="editUser?.originalUsername === user.username" (click)="cancelEdit()" class="btn btn-secondary">Cancel</button>
           <button (click)="deleteUser(user.username)" class="btn btn-danger">Delete</button>
         </td>
       </tr>
