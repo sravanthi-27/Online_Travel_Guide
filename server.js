@@ -479,9 +479,57 @@ app.get('/api/reset-password/:token', (req, res) => {
     });
 });
 
+// Middleware to serve static files, including users.json
+app.use(express.static(path.join(__dirname)));
+
+// Route to serve users.json
+app.get('/users.json', (req, res) => {
+  fs.readFile(path.join(__dirname, 'users.json'), 'utf8', (err, data) => {
+    if (err) {
+      console.error('Error reading users.json:', err);
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+    res.setHeader('Content-Type', 'application/json');
+    res.send(data);
+  });
+});
+
+// Route to check if the username exists
+app.post('/check-username', (req, res) => {
+  const { username } = req.body;
+
+  // Read users.json
+  fs.readFile(path.join(__dirname, 'users.json'), 'utf8', (err, data) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+
+    // Parse JSON data
+    try {
+      const users = JSON.parse(data); // Ensure we're parsing correctly
+
+      // Check if the username exists
+      const userExists = users.some(user => user.username === username); // Correct property: username
+
+      if (userExists) {
+        return res.json({ status: 'exists' });
+      } else {
+        return res.json({ status: 'not_found', registerUrl: '/register' });
+      }
+    } catch (parseError) {
+      console.error(parseError);
+      return res.status(500).json({ message: 'Error parsing users data' });
+    }
+  });
+});
 
 
 
+// Route for the registration page
+app.get('/register', (req, res) => {
+    res.send('<h1>Registration Page</h1><p>Please register here.</p>');
+});
 // Route for submitting accommodation form
 
 const hotelData = {
@@ -563,53 +611,89 @@ function writeFile(filePath, data, callback) {
     fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8', callback);
 }
 
+
 // POST route to add accommodation data
 app.post('/api/accommodation', (req, res) => {
     const accommodationData = req.body;
-    const place = accommodationData.place;
+    const { userName, email, phone, fullName, checkin, checkout } = accommodationData;
     
-    // Add hotel information based on the place selected
-    if (hotelData[place]) {
-        accommodationData.hotelName = hotelData[place].name;
-        accommodationData.hotelAddress = hotelData[place].address;
-    }
+    // Validate if the user exists by checking the username
+    fs.readFile(path.join(__dirname, 'users.json'), 'utf8', (err, data) => {
+        if (err) return res.status(500).json({ message: 'Error reading users data' });
 
-    // Check required fields
-    const requiredFields = [
-        'fullName', 'email', 'phone', 'address', 'location', 'place',
-        'accommodationType', 'priceRange', 'checkin', 'checkout', 'persons', 
-        'roomType', 'payment'
-    ];
+        try {
+            const users = JSON.parse(data);
+            const userExists = users.some(user => user.username === userName); // Check if user exists
 
-    for (const field of requiredFields) {
-        if (!accommodationData[field]) {
-            return res.status(400).json({ message: `Field ${field} is required` });
+            if (!userExists) {
+                return res.status(400).json({ message: 'Username not found. Please register first.' });
+            }
+
+            // Continue with adding accommodation if the user exists
+            const place = accommodationData.place;
+            if (hotelData[place]) {
+                accommodationData.hotelName = hotelData[place].name;
+                accommodationData.hotelAddress = hotelData[place].address;
+            }
+
+            // Check required fields
+            const requiredFields = [
+                'userName', 'email', 'phone', 'address', 'location', 'place',
+                'accommodationType', 'priceRange', 'checkin', 'checkout', 'persons', 
+                'roomType', 'payment'
+            ];
+
+            for (const field of requiredFields) {
+                if (!accommodationData[field]) {
+                    return res.status(400).json({ message: `Field ${field} is required` });
+                }
+            }
+
+            // Check for duplicate accommodation entry
+            readFile(accommodationFilePath, (err, accommodations) => {
+                if (err) return res.status(500).json({ message: 'Error reading accommodation data' });
+
+                const isDuplicate = accommodations.some(accom =>
+                    accom.userName === accommodationData.userName &&
+                    accom.email === accommodationData.email &&
+                    accom.checkin === accommodationData.checkin &&
+                    accom.checkout === accommodationData.checkout
+                );
+
+                if (isDuplicate) {
+                    return res.status(400).json({ message: 'Accommodation for the same dates already exists for this user.' });
+                }
+
+                accommodations.push(accommodationData);
+
+                writeFile(accommodationFilePath, accommodations, (err) => {
+                    if (err) return res.status(500).json({ message: 'Error saving accommodation data' });
+                    res.status(201).json({ message: 'Accommodation data saved successfully!' });
+
+                    // Proceed with sending the email only if the user exists
+                    const mailOptions = {
+                        from: 'mbsravanthi2006@gmail.com',
+                        to: accommodationData.email,
+                        subject: 'Accommodation Confirmation',
+                        text: `Dear ${accommodationData.userName},\n\nYour accommodation request has been received and it is confirmed.\n\nDetails:\n${JSON.stringify(accommodationData, null, 2)}\n\nThank you!`,
+                    };
+
+                    transporter.sendMail(mailOptions, (error, info) => {
+                        if (error) {
+                            return res.status(500).send({ message: 'Error sending email', error });
+                        }
+                        res.send({ message: 'Email sent successfully!', info });
+                    });
+                });
+            });
+
+        } catch (parseError) {
+            console.error('Error parsing users data:', parseError);
+            res.status(500).json({ message: 'Error processing users data' });
         }
-    }
-
-    // Read, check for duplicates, and write new entry
-    readFile(accommodationFilePath, (err, accommodations) => {
-        if (err) return res.status(500).json({ message: 'Error reading accommodation data' });
-
-        const isDuplicate = accommodations.some(accom =>
-            accom.fullName === accommodationData.fullName &&
-            accom.email === accommodationData.email &&
-            accom.checkin === accommodationData.checkin &&
-            accom.checkout === accommodationData.checkout
-        );
-
-        if (isDuplicate) {
-            return res.status(400).json({ message: 'Accommodation for the same dates already exists for this user.' });
-        }
-
-        accommodations.push(accommodationData);
-
-        writeFile(accommodationFilePath, accommodations, (err) => {
-            if (err) return res.status(500).json({ message: 'Error saving accommodation data' });
-            res.status(201).json({ message: 'Accommodation data saved successfully!' });
-        });
     });
 });
+
 
 // Endpoint to fetch all bookings
 app.get('/api/bookings', (req, res) => {
@@ -623,9 +707,9 @@ app.get('/api/bookings', (req, res) => {
     });
   });
   
-  // Endpoint to delete a booking by full name
-  app.delete('/api/bookings/:fullName', (req, res) => {
-    const { fullName } = req.params;
+  // Endpoint to fetch all bookings by username
+  app.get('/api/bookings/:username', (req, res) => {
+    const { username } = req.params;
   
     fs.readFile(accommodationFilePath, 'utf-8', (err, data) => {
       if (err) {
@@ -635,44 +719,113 @@ app.get('/api/bookings', (req, res) => {
       }
   
       const bookings = JSON.parse(data);
-      const updatedBookings = bookings.filter(
-        (booking) => booking.fullName !== fullName
-      );
+      const userBookings = bookings.filter((booking) => booking.userName === username);
   
-      if (updatedBookings.length === bookings.length) {
-        res.status(404).json({ error: 'Booking not found' });
-        return;
+      if (userBookings.length === 0) {
+        
+      } else {
+        res.json(userBookings);
       }
-  
-      fs.writeFile(accommodationFilePath, JSON.stringify(updatedBookings, null, 2), (err) => {
-        if (err) {
-          console.error('Error writing data:', err);
-          res.status(500).json({ error: 'Failed to write data' });
-        } else {
-          res.json({ message: 'Booking deleted successfully' });
-        }
-      });
     });
   });
+  
+  
+  
+  // Use express.json() middleware to parse JSON request bodies
+  app.use(express.json());
+  
+  // DELETE booking endpoint (requires userName, place, and checkin)
+app.delete('/api/bookings', (req, res) => {
+    const { userName, place, checkin } = req.body;
 
-// Endpoint to send email
-app.post('/api/send-email', (req, res) => {
-    const accommodationData = req.body;
-  
-    const mailOptions = {
-      from: 'mbsravanthi2006@gmail.com', // Your email
-      to: accommodationData.email, // Sending to the user's email
-      subject: 'Accommodation Confirmation',
-      text: `Dear ${accommodationData.fullName},\n\nYour accommodation request has been received and it is confirmed.\n\nDetails:\n${JSON.stringify(accommodationData, null, 2)}\n\nThank you!`,
-    };
-  
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        return res.status(500).send({ message: 'Error sending email', error });
-      }
-      res.send({ message: 'Email sent successfully!', info });
+    // Validate required fields
+    if (!userName || !place || !checkin) {
+        return res.status(400).json({ error: 'Missing required fields: userName, place, or checkin' });
+    }
+
+    fs.readFile(accommodationFilePath, 'utf-8', (err, data) => {
+        if (err) {
+            console.error('Error reading accommodation file:', err);
+            return res.status(500).json({ error: 'Failed to read accommodation data' });
+        }
+
+        let bookings;
+        try {
+            bookings = JSON.parse(data); // Parse the data into JSON format
+        } catch (parseError) {
+            console.error('Error parsing accommodation data:', parseError);
+            return res.status(500).json({ error: 'Failed to parse accommodation data' });
+        }
+
+        // Filter out the booking that matches userName, place, and checkin
+        const updatedBookings = bookings.filter(
+            (booking) => !(booking.userName === userName && booking.place === place && booking.checkin === checkin)
+        );
+
+        // If no bookings were deleted, return an error
+        if (updatedBookings.length === bookings.length) {
+            return res.status(404).json({ error: 'Booking not found for cancellation' });
+        }
+
+        // Write the updated data back to the accommodation file
+        fs.writeFile(accommodationFilePath, JSON.stringify(updatedBookings, null, 2), 'utf-8', (writeError) => {
+            if (writeError) {
+                console.error('Error saving updated accommodation data:', writeError);
+                return res.status(500).json({ error: 'Failed to save updated accommodation data' });
+            }
+
+            res.status(200).json({ message: 'Booking cancelled successfully' });
+        });
     });
-  });
+});
+
+//Endpoint to send email
+  app.post('/api/send-email', (req, res) => {
+    const accommodationData = req.body;
+    const { userName } = accommodationData;  // Extract the userName
+
+    // First, check if the username exists in users.json
+    fs.readFile(path.join(__dirname, 'users.json'), 'utf8', (err, data) => {
+        if (err) {
+            console.error('Error reading users.json:', err);
+            return res.status(500).json({ message: 'Internal server error' });
+        }
+
+        // Parse users.json
+        try {
+            const users = JSON.parse(data);
+
+            // Check if the username exists
+            const userExists = users.some(user => user.username === userName);
+
+            if (!userExists) {
+                // Return an error if the username doesn't exist, and ensure no further processing occurs
+                return res.status(404).json({ });
+            }
+
+            // Proceed to send the email only if the user exists
+            const mailOptions = {
+                from: 'mbsravanthi2006@gmail.com', // Your email
+                to: accommodationData.email, // Sending to the user's email
+                subject: 'Accommodation Confirmation',
+                text: `Dear ${accommodationData.userName},\n\nYour accommodation request has been received and it is confirmed.\n\nDetails:\n${JSON.stringify(accommodationData, null, 2)}\n\nThank you!`,
+            };
+
+            transporter.sendMail(mailOptions, (error, info) => {
+                if (error) {
+                    return res.status(500).send({ message: 'Error sending email', error });
+                }
+                // Only send this response once after email is sent successfully
+                return res.send({ message: 'Accommodation data saved and email sent successfully!', info });
+            });
+
+        } catch (parseError) {
+            console.error('Error parsing users data:', parseError);
+            return res.status(500).json({ message: 'Error parsing users data' });
+        }
+    });
+});
+
   
 // Route to get all accommodation entries
 app.get('/api/accommodations', (req, res) => {
