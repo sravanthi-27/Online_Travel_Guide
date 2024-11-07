@@ -28,10 +28,8 @@ import { AdminDashboardComponent } from './admin-dashboard/admin-dashboard.compo
 import { HttpClient } from '@angular/common/http';
 import { provideHttpClient } from '@angular/common/http';
 import { ProfileComponent } from './profile/profile.component';
-import { BookingsComponent } from './bookings/bookings.component';
 import { AuthService } from './auth.service';
-
-
+import { BookingsComponent } from './bookings/bookings.component';
 
 export const routes: Routes = [
     { path: '', redirectTo: 'home', pathMatch: 'full' },
@@ -57,9 +55,10 @@ export const routes: Routes = [
     {path:'delhi',component:DelhiComponent},
     { path: 'reset-password/:token', component: ResetPasswordComponent },
     { path: 'forgotpassword', component: ForgotPasswordComponent },
-  { path: 'admin-dashboard', component: AdminDashboardComponent },
-  {path:'profile',component:ProfileComponent},
-  {path:'bookings',component:BookingsComponent},
+   { path: 'admin-dashboard', component: AdminDashboardComponent },
+   {path:'profile',component:ProfileComponent},
+   {path:'bookings',component:BookingsComponent}
+  
 ];
 @NgModule({
     imports: [RouterModule.forRoot(routes)],
