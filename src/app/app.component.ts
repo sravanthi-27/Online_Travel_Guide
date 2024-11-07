@@ -10,8 +10,9 @@ import { AdminComponent } from './admin/admin.component';
 import { RegComponent } from './reg/reg.component';
 import { AccommodationComponent } from './accommodation/accommodation.component';
 import { AuthService } from './auth.service';
-import { HttpClientModule } from '@angular/common/http';
+import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { AdminDashboardComponent } from './admin-dashboard/admin-dashboard.component';
+import { BookingsComponent } from './bookings/bookings.component';
 
 @Component({
   selector: 'app-root',
@@ -29,6 +30,7 @@ import { AdminDashboardComponent } from './admin-dashboard/admin-dashboard.compo
     RouterOutlet,
     RouterLink,
     HttpClientModule,
+    BookingsComponent
   ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
