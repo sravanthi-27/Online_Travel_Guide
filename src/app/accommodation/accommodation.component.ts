@@ -1,6 +1,6 @@
-import { Component,OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { RouterLink, RouterOutlet } from '@angular/router';
+import { RouterLink, RouterOutlet, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
@@ -18,7 +18,7 @@ export class AccommodationComponent implements OnInit {
     'Punjab', 'Telangana', 'Odisha', 'Andhra Pradesh', 'Delhi'];
   selectedState: string = '';
   accommodationData = {
-    fullName: '',
+    userName: '',
     email: '',
     phone: '',
     address: '',
@@ -39,30 +39,30 @@ export class AccommodationComponent implements OnInit {
     agentId: ''
   };
   
-
   locationPlacesMap: { [key: string]: string[] } = {
-        'Rajasthan': ['Jaipur', 'Udaipur','Jaisalmer', 'Jodhpur'],
-        'Uttar Pradesh': ['Agra', 'Varanasi', 'Lucknow', 'Mathura'],
-        'Kerala': ['Alleppey', 'Munnar', 'Kochi', 'Varkala'],
-        'Maharashtra': ['Mumbai', 'Pune', 'Aurangabad', 'Nashik'],
-       'Tamil Nadu': ['Chennai', 'Madurai', 'Kanyakumari', 'Ooty'],
-       'Karnataka': ['Bengaluru', 'Mysore', 'Hampi', 'Coorg'],
-       'West Bengal': ['Kolkata', 'Darjeeling', 'Sundarbans', 'Shantiniketan'],
-       'Gujarat': ['Ahmedabad', 'Kutch', 'Gir National Park','Somnath'],
-       'Punjab': ['Amritsar', 'Chandigarh', 'Ludhiana', 'Patiala'],
-       'Telangana': ['Hyderabad', 'Warangal', 'Ramoji Film City', 'Khammam'],
-       'Odisha': ['Bhubaneswar', 'Puri', 'Konark', 'Ganjam'],
-       'Andhra Pradesh': ['Visakhapatnam', 'Amaravati', 'Tirupati', 'Kadapa'],
-       'Delhi': ['Red Fort', 'Qutub Minar', 'India Gate', 'Humayuns Tomb']
+    'Rajasthan': ['Jaipur', 'Udaipur','Jaisalmer', 'Jodhpur'],
+    'Uttar Pradesh': ['Agra', 'Varanasi', 'Lucknow', 'Mathura'],
+    'Kerala': ['Alleppey', 'Munnar', 'Kochi', 'Varkala'],
+    'Maharashtra': ['Mumbai', 'Pune', 'Aurangabad', 'Nashik'],
+    'Tamil Nadu': ['Chennai', 'Madurai', 'Kanyakumari', 'Ooty'],
+    'Karnataka': ['Bengaluru', 'Mysore', 'Hampi', 'Coorg'],
+    'West Bengal': ['Kolkata', 'Darjeeling', 'Sundarbans', 'Shantiniketan'],
+    'Gujarat': ['Ahmedabad', 'Kutch', 'Gir National Park','Somnath'],
+    'Punjab': ['Amritsar', 'Chandigarh', 'Ludhiana', 'Patiala'],
+    'Telangana': ['Hyderabad', 'Warangal', 'Ramoji Film City', 'Khammam'],
+    'Odisha': ['Bhubaneswar', 'Puri', 'Konark', 'Ganjam'],
+    'Andhra Pradesh': ['Visakhapatnam', 'Amaravati', 'Tirupati', 'Kadapa'],
+    'Delhi': ['Red Fort', 'Qutub Minar', 'India Gate', 'Humayuns Tomb']
   };
 
   hotelData: {
-     [key: string]: { 
-          name: string;
-          address: string;
-          agentName:string;
-          agentId:string;
-         } } = {
+    [key: string]: { 
+      name: string;
+      address: string;
+      agentName: string;
+      agentId: string;
+    };
+  } = {
 // Rajasthan
 Jaipur: { name: 'Jaipur Palace', address: 'Pink City, Jaipur', agentName: 'Ravi Sharma', agentId: 'AGT1001' },
 Udaipur: { name: 'Lake View Hotel', address: 'Lake Pichola, Udaipur', agentName: 'Anita Patel', agentId: 'AGT1002' },
@@ -141,16 +141,66 @@ Kakinada: { name: 'Kakinada Shores', address: 'Uppada Beach, Kakinada', agentNam
 'India Gate': { name: 'Patriot’s Stay', address: 'India Gate Rd, Delhi', agentName: 'Pooja Saini', agentId: 'AGT1051' },
 'Humayuns Tomb': { name: 'Mughal Residency', address: 'Nizamuddin, Delhi', agentName: 'Rakesh Chawla', agentId: 'AGT1052' },
   };
-
-
   places: string[] = [];
 
-  constructor(private http: HttpClient) {}
-  ngOnInit() {
-    // No need to call this.states() as it is an array
-  }
+  constructor(private http: HttpClient, private router: Router) {}
 
-  // Function to update places based on selected location
+  ngOnInit() {
+    // Initialization logic if needed
+  }
+  
+  // Verify user method
+async verifyUser(): Promise<void> {
+  const username = this.accommodationData.userName;
+
+  try {
+    // Fetch users.json directly from server
+    const response = await fetch('http://localhost:5300/users.json');
+    if (!response.ok) throw new Error('Failed to fetch users data');
+    
+    const users = await response.json();
+    // Adjusted property to match the JSON structure: "username"
+    const userExists = users.some((user: any) => user.username === username);
+
+    if (userExists) {
+      // If user exists, proceed with saving the data
+      await this.saveData();
+    } else {
+      // If user does not exist
+      
+      this.router.navigate(['/reg']);
+    }
+  } catch (error) {
+    console.error('Error verifying user:', error);
+    alert('Error verifying user. Please try again.');
+  }
+}
+
+// Save data method, called only if user verification succeeds
+async saveData(): Promise<void> {
+  try {
+    const saveResponse = await fetch('/api/accommodations', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(this.accommodationData)
+    });
+
+    if (saveResponse.ok) {
+      
+    } else {
+      throw new Error('Failed to save accommodation data');
+    }
+  } catch (error) {
+    console.error('Error saving data:', error);
+    alert('Error saving accommodation data. Please try again.');
+  }
+}
+
+
+
+  // Method to update places based on selected location
   updatePlaces() {
     this.places = this.locationPlacesMap[this.accommodationData.location] || [];
     this.accommodationData.hotelName = '';
@@ -159,7 +209,7 @@ Kakinada: { name: 'Kakinada Shores', address: 'Uppada Beach, Kakinada', agentNam
     this.accommodationData.agentId = '';
   }
 
-  // Function to update hotel details based on selected place
+  // Method to update hotel details based on selected place
   onPlaceChange() {
     const place = this.accommodationData.place as keyof typeof this.hotelData;
     const hotel = this.hotelData[place];
@@ -176,7 +226,7 @@ Kakinada: { name: 'Kakinada Shores', address: 'Uppada Beach, Kakinada', agentNam
     }
   }
 
-  // Function to update additional services based on checkbox selection
+  // Method to update additional services based on checkbox selection
   updateAdditionalServices(event: Event) {
     const checkbox = event.target as HTMLInputElement;
     const value = checkbox.value;
@@ -190,9 +240,9 @@ Kakinada: { name: 'Kakinada Shores', address: 'Uppada Beach, Kakinada', agentNam
       }
     }
   }
-  
-  // Sample submit function
-  submitAccommodation() {
+
+  // Submit accommodation data method
+  async submitAccommodation() {
     const emailPattern = /^[a-z][a-z0-9]*\d+@gmail\.com$/;
     if (!emailPattern.test(this.accommodationData.email)) {
       alert("Email must start with letters, contain numbers, and end with '@gmail.com'.");
@@ -200,23 +250,26 @@ Kakinada: { name: 'Kakinada Shores', address: 'Uppada Beach, Kakinada', agentNam
     }
 
     // Validate that both terms checkboxes are checked
-  const terms1 = document.getElementById('terms1') as HTMLInputElement;
-  const terms2 = document.getElementById('terms2') as HTMLInputElement;
+    const terms1 = document.getElementById('terms1') as HTMLInputElement;
+    const terms2 = document.getElementById('terms2') as HTMLInputElement;
 
-  if (!terms1.checked || !terms2.checked) {
-    alert("Please agree to both terms before submitting.");
-    return;
-  }
-  
+    if (!terms1.checked || !terms2.checked) {
+      alert("Please agree to both terms before submitting.");
+      return;
+    }
+
+    // Verify user and then submit the form
+    await this.verifyUser();
+    
     const formData = this.accommodationData;
     this.http.post('http://localhost:5300/api/accommodation', formData)
       .subscribe({
         next: () => {
           alert('Accommodation data saved successfully!');
-  
-          // Reset the form by clearing each field in accommodationData
+
+          // Reset the form
           this.accommodationData = {
-            fullName: '',
+            userName: '',
             email: '',
             phone: '',
             address: '',
@@ -237,7 +290,7 @@ Kakinada: { name: 'Kakinada Shores', address: 'Uppada Beach, Kakinada', agentNam
             agentId: ''
           };
           this.places = [];
-  
+
           // Manually reset each additional services checkbox
           const checkboxes = document.querySelectorAll(
             'input[type="checkbox"][id^="service"]'
@@ -245,13 +298,12 @@ Kakinada: { name: 'Kakinada Shores', address: 'Uppada Beach, Kakinada', agentNam
           checkboxes.forEach((checkbox) => {
             checkbox.checked = false;
           });
-  
+
           // Reset terms and conditions checkboxes
           const terms1 = document.getElementById('terms1') as HTMLInputElement;
           const terms2 = document.getElementById('terms2') as HTMLInputElement;
           if (terms1) terms1.checked = false;
           if (terms2) terms2.checked = false;
-  
         },
         error: (error) => alert(error.error.message || 'Error submitting data'),
       });
@@ -261,8 +313,8 @@ Kakinada: { name: 'Kakinada Shores', address: 'Uppada Beach, Kakinada', agentNam
       next: () => {
         console.log('Email sent successfully!');
       },
-      error: (error) => alert(error.error.message || 'Error sending email'),
     });
   }
-  
 }
+
+  
